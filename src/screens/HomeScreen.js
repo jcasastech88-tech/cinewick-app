@@ -16,7 +16,7 @@ import { fetchPosts, searchContent } from "../api";
 import { colors } from "../theme";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 36) / 4;
+const CARD_WIDTH = (width - 36) / 3.1;
 
 const TABS = [
   { key: "all", label: "Inicio", icon: "🏠" },
@@ -182,7 +182,7 @@ const load = useCallback(async (label, pageNum, append = false) => {
       <FlatList
         data={gridData}
         keyExtractor={(item) => item.id}
-        numColumns={4}
+        numColumns={3}
 	keyExtractor={(item, index) => `${item.id}-${index}`}
         columnWrapperStyle={s.row}
         ListHeaderComponent={renderHeader}
