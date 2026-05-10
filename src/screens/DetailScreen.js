@@ -4,48 +4,58 @@ import {
   StyleSheet, Linking, Dimensions, Share, ActivityIndicator,
 } from "react-native";
 import YoutubePlayer from "react-native-youtube-iframe";
-import { fetchTrailer } from "../api";
+import { fetchTrailer, fetchFullDetail } from "../api";
 import { colors } from "../theme";
 
 const { width } = Dimensions.get("window");
-const PLAYER_HEIGHT = width * 0.56; // 16:9
+const PLAYER_HEIGHT = width * 0.56;
 
 export default function DetailScreen({ route, navigation }) {
   const { post } = route.params;
-  const [trailerKey, setTrailerKey]     = useState(null);
+  const [trailerKey, setTrailerKey]         = useState(null);
   const [loadingTrailer, setLoadingTrailer] = useState(true);
-  const [showTrailer, setShowTrailer]   = useState(false);
-  const [playing, setPlaying]           = useState(false);
+  const [showTrailer, setShowTrailer]       = useState(false);
+  const [playing, setPlaying]               = useState(false);
+  const [detail, setDetail]                 = useState(null);
 
   useEffect(() => {
     fetchTrailer(post.tmdbId, post.tmdbType)
       .then((key) => { setTrailerKey(key); setLoadingTrailer(false); })
       .catch(() => setLoadingTrailer(false));
+
+    fetchFullDetail(post.tmdbId, post.tmdbType)
+      .then((d) => setDetail(d))
+      .catch(() => {});
   }, [post.tmdbId]);
 
-  const openTrailer = () => {
-    setShowTrailer(true);
-    setPlaying(true);
-  };
-
-  const closeTrailer = () => {
-    setShowTrailer(false);
-    setPlaying(false);
-  };
-
+  const openTrailer  = () => { setShowTrailer(true); setPlaying(true); };
+  const closeTrailer = () => { setShowTrailer(false); setPlaying(false); };
   const openInBrowser = () => Linking.openURL(post.url);
   const sharePost = () => Share.share({
     message: `${post.title} — Miralo en CineWick: ${post.url}`,
   });
 
+  // Extraer datos extra de TMDB
+  const isMovie    = post.tmdbType === "movie";
+  const runtime    = detail ? (isMovie ? detail.runtime : detail.episode_run_time?.[0]) : null;
+  const genres     = detail?.genres?.map((g) => g.name) ?? [];
+  const country    = detail ? (isMovie
+    ? detail.production_countries?.[0]?.name
+    : detail.origin_country?.[0]) : null;
+  const voteCount  = detail?.vote_count ?? null;
+  const originalTitle = detail ? (isMovie ? detail.original_title : detail.original_name) : null;
+  const status     = detail?.status ?? null;
+  const language   = detail?.original_language?.toUpperCase() ?? null;
+  const seasons    = !isMovie ? detail?.number_of_seasons : null;
+  const episodes   = !isMovie ? detail?.number_of_episodes : null;
+
   return (
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* Hero: alterna entre imagen y reproductor */}
+        {/* Hero */}
         <View style={[s.heroWrap, { height: PLAYER_HEIGHT }]}>
           {showTrailer && trailerKey ? (
-            // ── Reproductor YouTube ──────────────────────────
             <View style={s.playerWrap}>
               <YoutubePlayer
                 height={PLAYER_HEIGHT}
@@ -53,13 +63,10 @@ export default function DetailScreen({ route, navigation }) {
                 videoId={trailerKey}
                 play={playing}
                 webViewStyle={{ opacity: 0.99 }}
-                onChangeState={(state) => {
-                  if (state === "ended") closeTrailer();
-                }}
+                onChangeState={(state) => { if (state === "ended") closeTrailer(); }}
               />
             </View>
           ) : (
-            // ── Imagen de fondo ──────────────────────────────
             <>
               {post.backdrop || post.image ? (
                 <Image source={{ uri: post.backdrop || post.image }} style={s.heroImg} />
@@ -69,13 +76,7 @@ export default function DetailScreen({ route, navigation }) {
                 </View>
               )}
               <View style={s.heroFade} />
-
-              {/* Botón Ver tráiler */}
-              {loadingTrailer && (
-                <View style={s.playBtn}>
-                  <ActivityIndicator color="#fff" size="small" />
-                </View>
-              )}
+              {loadingTrailer && <View style={s.playBtn}><ActivityIndicator color="#fff" size="small" /></View>}
               {!loadingTrailer && trailerKey && (
                 <TouchableOpacity style={s.playBtn} onPress={openTrailer}>
                   <Text style={s.playIcon}>▶</Text>
@@ -89,13 +90,9 @@ export default function DetailScreen({ route, navigation }) {
               )}
             </>
           )}
-
-          {/* Botón volver — siempre visible */}
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
             <Text style={s.backText}>← Volver</Text>
           </TouchableOpacity>
-
-          {/* Cerrar tráiler — solo cuando está reproduciendo */}
           {showTrailer ? (
             <TouchableOpacity style={s.shareBtn} onPress={closeTrailer}>
               <Text style={s.shareText}>✕ Cerrar</Text>
@@ -107,37 +104,51 @@ export default function DetailScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Contenido — siempre visible debajo */}
         <View style={s.content}>
+          {/* Géneros */}
           <View style={s.metaRow}>
-            {post.labels.map((l) => (
-              <View key={l} style={s.labelChip}>
-                <Text style={s.labelText}>{l}</Text>
-              </View>
-            ))}
+            {genres.length > 0
+              ? genres.map((g) => <View key={g} style={s.labelChip}><Text style={s.labelText}>{g}</Text></View>)
+              : post.labels.map((l) => <View key={l} style={s.labelChip}><Text style={s.labelText}>{l}</Text></View>)
+            }
           </View>
 
+          {/* Título */}
           <Text style={s.title}>{post.title}</Text>
 
-          <View style={s.statsRow}>
+          {/* Info grid */}
+          <View style={s.infoGrid}>
+            {originalTitle && originalTitle !== post.title && (
+              <InfoRow icon="🎬" label="Título original" value={originalTitle} />
+            )}
             {post.rating && (
-              <View style={s.statBox}>
-                <Text style={s.statValue}>⭐ {post.rating}</Text>
-                <Text style={s.statLabel}>Puntuación</Text>
-              </View>
+              <InfoRow icon="⭐" label="Rating" value={`${post.rating} / 10`} highlight />
+            )}
+            {voteCount && (
+              <InfoRow icon="🗳" label="Votos" value={voteCount.toLocaleString()} />
             )}
             {post.year && (
-              <View style={s.statBox}>
-                <Text style={s.statValue}>📅 {post.year}</Text>
-                <Text style={s.statLabel}>Año</Text>
-              </View>
+              <InfoRow icon="📅" label="Fecha de estreno" value={post.date || post.year} />
             )}
-            <View style={s.statBox}>
-              <Text style={s.statValue}>🗓 {post.date}</Text>
-              <Text style={s.statLabel}>Publicado</Text>
-            </View>
+            {runtime && (
+              <InfoRow icon="⏱" label="Duración" value={`${runtime} min`} />
+            )}
+            {country && (
+              <InfoRow icon="🌎" label="País" value={country} />
+            )}
+            {language && (
+              <InfoRow icon="🔊" label="Idioma" value={language} />
+            )}
+            {status && (
+              <InfoRow icon="📡" label="Estado" value={status} />
+            )}
+            {seasons && (
+              <InfoRow icon="📺" label="Temporadas" value={`${seasons} temporadas · ${episodes} episodios`} />
+            )}
+            <InfoRow icon="🏷" label="Categoría" value={isMovie ? "Película" : "Serie"} />
           </View>
 
+          {/* Descripción */}
           <Text style={s.sectionTitle}>Descripción</Text>
           <Text style={s.body}>{post.content || post.summary}</Text>
 
@@ -148,8 +159,19 @@ export default function DetailScreen({ route, navigation }) {
             <Text style={s.ctaSecondaryText}>↗ Compartir</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
+    </View>
+  );
+}
+
+function InfoRow({ icon, label, value, highlight }) {
+  return (
+    <View style={s.infoRow}>
+      <View style={s.infoLeft}>
+        <Text style={s.infoIcon}>{icon}</Text>
+        <Text style={s.infoLabel}>{label}</Text>
+      </View>
+      <Text style={[s.infoValue, highlight && s.infoValueHighlight]}>{value}</Text>
     </View>
   );
 }
@@ -197,15 +219,25 @@ const s = StyleSheet.create({
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,
   },
   labelText:     { color: colors.red, fontSize: 12, fontWeight: "600" },
-  title:         { color: colors.white, fontSize: 24, fontWeight: "800", lineHeight: 32, marginBottom: 16 },
-  statsRow:      { flexDirection: "row", gap: 10, marginBottom: 24, flexWrap: "wrap" },
-  statBox:       {
-    backgroundColor: colors.bgCard, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 10, alignItems: "center",
-    borderWidth: 1, borderColor: "#ffffff10", minWidth: 90,
+  title:         { color: colors.white, fontSize: 22, fontWeight: "800", lineHeight: 30, marginBottom: 16 },
+
+  // Info grid
+  infoGrid:      {
+    backgroundColor: colors.bgCard, borderRadius: 16,
+    borderWidth: 1, borderColor: "#ffffff10",
+    marginBottom: 24, overflow: "hidden",
   },
-  statValue:     { color: colors.white, fontSize: 14, fontWeight: "700", marginBottom: 2 },
-  statLabel:     { color: colors.dim, fontSize: 11 },
+  infoRow:       {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: "#ffffff08",
+  },
+  infoLeft:      { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  infoIcon:      { fontSize: 16 },
+  infoLabel:     { color: colors.dim, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  infoValue:     { color: colors.white, fontSize: 13, fontWeight: "600", textAlign: "right", flex: 1 },
+  infoValueHighlight: { color: colors.gold, fontSize: 14, fontWeight: "800" },
+
   sectionTitle:  { color: colors.white, fontSize: 16, fontWeight: "700", marginBottom: 10 },
   body:          { color: colors.muted, fontSize: 14, lineHeight: 22, marginBottom: 28 },
   cta:           {

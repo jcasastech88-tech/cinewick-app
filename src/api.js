@@ -153,3 +153,18 @@ export async function fetchTrailer(tmdbId, tmdbType) {
   }
   return null;
 }
+
+// ── Detalle completo de TMDB ───────────────────────────────────
+export async function fetchFullDetail(tmdbId, tmdbType) {
+  if (!tmdbId) return null;
+  for (const lang of ["es-MX", "es-ES", "en-US"]) {
+    try {
+      const url = `${TMDB_BASE}/${tmdbType}/${tmdbId}?api_key=${TMDB_KEY}&language=${lang}&append_to_response=credits,release_dates,content_ratings`;
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if ((data.overview && data.overview.length > 10) || lang === "en-US") return data;
+    } catch { continue; }
+  }
+  return null;
+}
