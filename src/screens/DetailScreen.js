@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  StyleSheet, Linking, Dimensions, Share, ActivityIndicator, Modal,
+  StyleSheet, Linking, Dimensions, Share, ActivityIndicator,
 } from "react-native";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { fetchTrailer } from "../api";
 import { colors } from "../theme";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
+const PLAYER_HEIGHT = width * 0.56; // 16:9
 
 export default function DetailScreen({ route, navigation }) {
   const { post } = route.params;
-  const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerKey, setTrailerKey]     = useState(null);
   const [loadingTrailer, setLoadingTrailer] = useState(true);
-  const [playing, setPlaying] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showTrailer, setShowTrailer]   = useState(false);
+  const [playing, setPlaying]           = useState(false);
 
   useEffect(() => {
     fetchTrailer(post.tmdbId, post.tmdbType)
@@ -23,13 +24,13 @@ export default function DetailScreen({ route, navigation }) {
   }, [post.tmdbId]);
 
   const openTrailer = () => {
+    setShowTrailer(true);
     setPlaying(true);
-    setShowModal(true);
   };
 
   const closeTrailer = () => {
+    setShowTrailer(false);
     setPlaying(false);
-    setShowModal(false);
   };
 
   const openInBrowser = () => Linking.openURL(post.url);
@@ -37,75 +38,76 @@ export default function DetailScreen({ route, navigation }) {
     message: `${post.title} — Miralo en CineWick: ${post.url}`,
   });
 
-  const heroHeight = width * 0.56;
-
   return (
     <View style={s.container}>
-
-      {/* Modal del tráiler en pantalla completa */}
-      <Modal
-        visible={showModal}
-        animationType="fade"
-        supportedOrientations={["portrait", "landscape"]}
-        onRequestClose={closeTrailer}
-      >
-        <View style={s.modalContainer}>
-<YoutubePlayer
-  height={width * 0.56}
-  width={width}
-  videoId={trailerKey}
-  play={playing}
-  webViewStyle={{ opacity: 0.99 }}
-  onChangeState={(state) => {
-    if (state === "ended") closeTrailer();
-  }}
-/>
-          <TouchableOpacity style={s.closeModal} onPress={closeTrailer}>
-            <Text style={s.closeModalText}>✕ Cerrar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* Hero imagen */}
-        <View style={[s.heroWrap, { height: heroHeight }]}>
-          {post.backdrop || post.image ? (
-            <Image source={{ uri: post.backdrop || post.image }} style={s.heroImg} />
+        {/* Hero: alterna entre imagen y reproductor */}
+        <View style={[s.heroWrap, { height: PLAYER_HEIGHT }]}>
+          {showTrailer && trailerKey ? (
+            // ── Reproductor YouTube ──────────────────────────
+            <View style={s.playerWrap}>
+              <YoutubePlayer
+                height={PLAYER_HEIGHT}
+                width={width}
+                videoId={trailerKey}
+                play={playing}
+                webViewStyle={{ opacity: 0.99 }}
+                onChangeState={(state) => {
+                  if (state === "ended") closeTrailer();
+                }}
+              />
+            </View>
           ) : (
-            <View style={[s.heroImg, s.noImg]}>
-              <Text style={{ fontSize: 80 }}>🎬</Text>
-            </View>
-          )}
-          <View style={s.heroFade} />
+            // ── Imagen de fondo ──────────────────────────────
+            <>
+              {post.backdrop || post.image ? (
+                <Image source={{ uri: post.backdrop || post.image }} style={s.heroImg} />
+              ) : (
+                <View style={[s.heroImg, s.noImg]}>
+                  <Text style={{ fontSize: 80 }}>🎬</Text>
+                </View>
+              )}
+              <View style={s.heroFade} />
 
-          {/* Botón tráiler */}
-          {loadingTrailer && (
-            <View style={s.playBtn}>
-              <ActivityIndicator color="#fff" size="small" />
-            </View>
-          )}
-          {!loadingTrailer && trailerKey && (
-            <TouchableOpacity style={s.playBtn} onPress={openTrailer}>
-              <Text style={s.playIcon}>▶</Text>
-              <Text style={s.playText}>Ver tráiler</Text>
-            </TouchableOpacity>
-          )}
-          {!loadingTrailer && !trailerKey && (
-            <View style={s.noTrailerBadge}>
-              <Text style={s.noTrailerText}>Sin tráiler disponible</Text>
-            </View>
+              {/* Botón Ver tráiler */}
+              {loadingTrailer && (
+                <View style={s.playBtn}>
+                  <ActivityIndicator color="#fff" size="small" />
+                </View>
+              )}
+              {!loadingTrailer && trailerKey && (
+                <TouchableOpacity style={s.playBtn} onPress={openTrailer}>
+                  <Text style={s.playIcon}>▶</Text>
+                  <Text style={s.playText}>Ver tráiler</Text>
+                </TouchableOpacity>
+              )}
+              {!loadingTrailer && !trailerKey && (
+                <View style={s.noTrailerBadge}>
+                  <Text style={s.noTrailerText}>Sin tráiler disponible</Text>
+                </View>
+              )}
+            </>
           )}
 
-          {/* Navegación */}
+          {/* Botón volver — siempre visible */}
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
             <Text style={s.backText}>← Volver</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.shareBtn} onPress={sharePost}>
-            <Text style={s.shareText}>↗ Compartir</Text>
-          </TouchableOpacity>
+
+          {/* Cerrar tráiler — solo cuando está reproduciendo */}
+          {showTrailer ? (
+            <TouchableOpacity style={s.shareBtn} onPress={closeTrailer}>
+              <Text style={s.shareText}>✕ Cerrar</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={s.shareBtn} onPress={sharePost}>
+              <Text style={s.shareText}>↗ Compartir</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
+        {/* Contenido — siempre visible debajo */}
         <View style={s.content}>
           <View style={s.metaRow}>
             {post.labels.map((l) => (
@@ -146,6 +148,7 @@ export default function DetailScreen({ route, navigation }) {
             <Text style={s.ctaSecondaryText}>↗ Compartir</Text>
           </TouchableOpacity>
         </View>
+
       </ScrollView>
     </View>
   );
@@ -153,14 +156,8 @@ export default function DetailScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container:     { flex: 1, backgroundColor: colors.bg },
-  modalContainer:{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
-  closeModal:    {
-    position: "absolute", top: 48, right: 16,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20,
-  },
-  closeModalText:{ color: "#fff", fontSize: 15, fontWeight: "700" },
   heroWrap:      { position: "relative", backgroundColor: "#000" },
+  playerWrap:    { width: "100%", height: "100%", backgroundColor: "#000" },
   heroImg:       { width: "100%", height: "100%", resizeMode: "cover" },
   noImg:         { alignItems: "center", justifyContent: "center" },
   heroFade:      {
