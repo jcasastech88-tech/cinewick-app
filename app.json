@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "CineWick",
+    "slug": "cinewick-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0f"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/c6ab34d3-4df5-47ca-8449-082ed800f1bd"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "android": {
+      "package": "com.cinewick.app",
+      "versionCode": 2,
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0f"
+      }
+    },
+    "scheme": "cinewick",
+    "extra": {
+      "eas": {
+        "projectId": "c6ab34d3-4df5-47ca-8449-082ed800f1bd"
+      }
+    },
+    "ios": {}
+  }
+}
