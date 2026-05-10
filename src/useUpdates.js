@@ -4,8 +4,8 @@ import * as Updates from "expo-updates";
 
 // ── Configuración ──────────────────────────────────────────────
 // Cambiá esta URL por donde subas el APK nuevo cada vez
-const APK_DOWNLOAD_URL = "https://t.me/cinewickvip";
-const CURRENT_VERSION  = "1.0.0";
+const APK_DOWNLOAD_URL = "https://github.com/jcasastech88-tech/cinewick-app.git";
+const CURRENT_VERSION  = "1.1.0";
 
 export function useAppUpdates() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
