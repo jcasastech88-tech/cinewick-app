@@ -33,7 +33,7 @@ export function useAppUpdates() {
     // 2️⃣ Popup: aviso de nueva versión de APK
     try {
       const res = await fetch(
-        "https://raw.githubusercontent.com/cinewick/cinewick-app/main/version.json",
+  "https://raw.githubusercontent.com/jcasastech88-tech/cinewick-app/main/version.json",
         { cache: "no-store" }
       );
       if (!res.ok) return;
