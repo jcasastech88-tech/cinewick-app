@@ -16,16 +16,14 @@ const NavTheme = {
   colors: {
     ...DefaultTheme.colors,
     background: colors.bg,
-    card: colors.bg,
-    text: "#f0f0f5",
-    border: "#ffffff15",
+    card:       colors.bg,
+    text:       colors.white,
+    border:     colors.border,
   },
 };
 
 function AppNavigator() {
-  // Activa OTA + popup de actualización automáticamente
   useAppUpdates();
-
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -33,23 +31,29 @@ function AppNavigator() {
         component={HomeScreen}
         options={{
           headerTitle: () => (
-            <View style={styles.headerTitle}>
-              <Text style={styles.logoIcon}>🎬</Text>
-              <Text style={styles.logoText}>
-                CINE<Text style={styles.logoAccent}>WICK</Text>
+            <View style={s.logoWrap}>
+              <Text style={s.logoIcon}>🎬</Text>
+              <Text style={s.logoText}>
+                CINE<Text style={s.logoAccent}>WICK</Text>
               </Text>
             </View>
           ),
           headerRight: () => (
             <TouchableOpacity
-              style={styles.telegramBtn}
+              style={s.telegramBtn}
               onPress={() => Linking.openURL("https://t.me/cinewickvip")}
             >
-              <Text style={styles.telegramText}>✈️ Telegram</Text>
+              <Text style={s.telegramText}>✈️ Telegram</Text>
             </TouchableOpacity>
           ),
-          headerStyle: { backgroundColor: colors.bg, elevation: 0, shadowOpacity: 0 },
-          headerTintColor: "#fff",
+          headerStyle: {
+            backgroundColor: colors.bg,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0.5,
+            borderBottomColor: colors.border,
+          },
+          headerTintColor: colors.white,
         }}
       />
       <Stack.Screen
@@ -72,15 +76,11 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
-  logoIcon: { fontSize: 20 },
-  logoText: { fontSize: 20, fontWeight: "900", letterSpacing: 2, color: "#fff" },
-  logoAccent: { color: colors.red },
-  telegramBtn: {
-    backgroundColor: "#229ED9",
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, marginRight: 12,
-  },
-  telegramText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+const s = StyleSheet.create({
+  logoWrap:    { flexDirection: "row", alignItems: "center", gap: 6 },
+  logoIcon:    { fontSize: 20 },
+  logoText:    { fontSize: 20, fontWeight: "900", letterSpacing: 2, color: colors.white },
+  logoAccent:  { color: colors.primary },
+  telegramBtn: { backgroundColor: colors.telegram, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 12 },
+  telegramText:{ color: "#fff", fontSize: 12, fontWeight: "700" },
 });
