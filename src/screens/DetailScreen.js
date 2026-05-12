@@ -48,7 +48,7 @@ export default function DetailScreen({ route, navigation }) {
   const [loadingPost, setLoadingPost] = useState(true);
 
   const [currentLang, setCurrentLang]     = useState("LAT");
-  const [currentSeason, setCurrentSeason] = useState(1);
+  const [currentSeason, setCurrentSeason] = useState(post.tmdbSeason || 1);
   const [currentEp, setCurrentEp]         = useState(1);
   const [videoUrl, setVideoUrl]           = useState(null);
   const [showPlayer, setShowPlayer]       = useState(false);
@@ -189,7 +189,9 @@ export default function DetailScreen({ route, navigation }) {
                         onPress={() => { setCurrentSeason(t); setCurrentEp(1); }}
                       >
                         <Text style={[s.seasonPillText, currentSeason === t && s.seasonPillTextActive]}>
-                          {seasons.length > 1 ? `Temporada ${t}` : `Temporada ${t}`}
+                          {post.tmdbSeason === t && post.tmdbSeasonName
+                            ? post.tmdbSeasonName
+                            : `Temporada ${t}`}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -293,7 +295,13 @@ export default function DetailScreen({ route, navigation }) {
             </View>
           ) : serieData ? (
             <TouchableOpacity style={s.watchBtn} onPress={playVideo}>
-              <Text style={s.watchBtnText}>▶ {isMovie ? "Ver película" : "Ver serie"}</Text>
+              <Text style={s.watchBtnText}>
+                ▶ {isMovie
+                  ? "Ver película"
+                  : post.tmdbSeasonName
+                    ? `Ver ${post.tmdbSeasonName}`
+                    : "Ver serie"}
+              </Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={s.watchBtn} onPress={openWeb}>
@@ -313,6 +321,7 @@ export default function DetailScreen({ route, navigation }) {
             {runtime       && <InfoRow icon="⏱" label="Duración"  value={`${runtime} min`} />}
             {quality       && <InfoRow icon="📺" label="Calidad"   value={quality} />}
             {seasons2      && <InfoRow icon="🎞" label="Temporadas" value={`${seasons2} temp`} />}
+            {post.tmdbSeason && <InfoRow icon="📋" label="Esta entrega" value={post.tmdbSeasonName || `Temporada ${post.tmdbSeason}`} />}
           </View>
 
           {/* Reparto */}

@@ -35,13 +35,18 @@ async function searchBlogger(query) {
 }
 
 function parseTmdb(html) {
-  const id   = html.match(/class=["']tmdb-id["'][^>]*>\s*(\d+)/)?.[1]
-             || html.match(/tmdb-id[^>]*>\s*(\d+)/)?.[1]
-             || null;
-  const type = html.match(/class=["']tmdb-type["'][^>]*>\s*(movie|tv)/)?.[1]
-             || html.match(/tmdb-type[^>]*>\s*(movie|tv)/)?.[1]
-             || "movie";
-  return { id, type };
+  const id      = html.match(/class=["']tmdb-id["'][^>]*>\s*(\d+)/)?.[1]
+               || html.match(/tmdb-id[^>]*>\s*(\d+)/)?.[1]
+               || null;
+  const type    = html.match(/class=["']tmdb-type["'][^>]*>\s*(movie|tv)/)?.[1]
+               || html.match(/tmdb-type[^>]*>\s*(movie|tv)/)?.[1]
+               || "movie";
+  const season  = html.match(/class=["']tmdb-season["'][^>]*>\s*(\d+)/)?.[1]
+               || html.match(/tmdb-season[^>]*>\s*(\d+)/)?.[1]
+               || null;
+  const seasonName = html.match(/class=["']tmdb-season-name["'][^>]*>\s*([^<]+)/)?.[1]?.trim()
+                  || null;
+  return { id, type, season: season ? parseInt(season) : null, seasonName };
 }
 
 function firstImage(html) {
@@ -56,11 +61,13 @@ function parsePost(post) {
   const html   = post.content ?? "";
   const text   = plain(html);
   const labels = post.labels ?? [];
-  const { id: tmdbId, type: tmdbType } = parseTmdb(html);
+  const { id: tmdbId, type: tmdbType, season: tmdbSeason, seasonName: tmdbSeasonName } = parseTmdb(html);
   return {
     id:       post.id,
     tmdbId,
     tmdbType,
+    tmdbSeason,
+    tmdbSeasonName,
     title:    post.title,
     date:     post.published?.slice(0, 10) ?? "",
     image:    post.images?.[0]?.url || firstImage(html),
