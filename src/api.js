@@ -84,8 +84,9 @@ function parsePost(post) {
 async function tmdbFetch(path) {
   for (const lang of LANGS) {
     try {
+      const sep = path.includes("?") ? "&" : "?";
       const res = await fetchWithTimeout(
-        `${TMDB_BASE}${path}?api_key=${TMDB_KEY}&language=${lang}`, 6000
+        `${TMDB_BASE}${path}${sep}api_key=${TMDB_KEY}&language=${lang}`, 6000
       );
       if (!res.ok) continue;
       const data = await res.json();
@@ -98,19 +99,57 @@ async function tmdbFetch(path) {
 async function enrich(post) {
   if (!post.tmdbId) return post;
   try {
-    const t = await tmdbFetch(`/${post.tmdbType}/${post.tmdbId}`);
+    const t = await tmdbFetch(`/${post.tmdbType}/${post.tmdbId}?append_to_response=release_dates,content_ratings`);
     if (!t) return post;
-    const title = post.tmdbType === "movie" ? t.title : t.name;
-    const date  = post.tmdbType === "movie" ? t.release_date : t.first_air_date;
+
+    const baseTitle = post.tmdbType === "movie" ? t.title : t.name;
+    const date      = post.tmdbType === "movie" ? t.release_date : t.first_air_date;
+    let image       = t.poster_path   ? `${TMDB_IMG}${t.poster_path}`    : post.image;
+    let backdrop    = t.backdrop_path ? `${TMDB_BACK}${t.backdrop_path}` : backdrop;
+    let overview    = t.overview || post.content;
+    let title       = baseTitle || post.title;
+
+    // Si es serie con temporada específica, buscar datos de esa temporada
+    if (post.tmdbType === "tv" && post.tmdbSeason) {
+      try {
+        const s = await tmdbFetch(`/tv/${post.tmdbId}/season/${post.tmdbSeason}`);
+        if (s) {
+          if (s.poster_path) image    = `${TMDB_IMG}${s.poster_path}`;
+          if (s.poster_path) backdrop = `${TMDB_BACK}${s.poster_path}`;
+          if (s.overview && s.overview.length > 10) overview = s.overview;
+          const sName = post.tmdbSeasonName || s.name || `Temporada ${post.tmdbSeason}`;
+          title = `${baseTitle} — ${sName}`;
+        }
+      } catch {}
+    }
+
+    // Extraer certificación de edad
+    let certification = null;
+    try {
+      if (post.tmdbType === "movie") {
+        const releases = t.release_dates?.results || [];
+        const us = releases.find(r => r.iso_3166_1 === "US");
+        const ar = releases.find(r => r.iso_3166_1 === "AR");
+        const cert = (ar || us)?.release_dates?.[0]?.certification;
+        if (cert) certification = cert;
+      } else {
+        const ratings = t.content_ratings?.results || [];
+        const us = ratings.find(r => r.iso_3166_1 === "US");
+        const ar = ratings.find(r => r.iso_3166_1 === "AR");
+        certification = (ar || us)?.rating || null;
+      }
+    } catch {}
+
     return {
       ...post,
-      title:    title           || post.title,
-      image:    t.poster_path   ? `${TMDB_IMG}${t.poster_path}`    : post.image,
-      backdrop: t.backdrop_path ? `${TMDB_BACK}${t.backdrop_path}` : null,
-      rating:   t.vote_average  ? t.vote_average.toFixed(1)         : post.rating,
-      year:     date            ? date.slice(0, 4)                   : post.year,
-      content:  t.overview      || post.content,
-      summary:  t.overview      ? t.overview.slice(0, 200)          : post.summary,
+      title,
+      image,
+      backdrop,
+      rating:        t.vote_average ? t.vote_average.toFixed(1) : post.rating,
+      year:          date ? date.slice(0, 4) : post.year,
+      content:       overview,
+      summary:       overview ? overview.slice(0, 200) : post.summary,
+      certification,
     };
   } catch { return post; }
 }

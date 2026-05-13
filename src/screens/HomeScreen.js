@@ -15,7 +15,7 @@ const SLIDE_H = 220;
 const TABS = [
   { key: "all",          label: "Inicio",    icon: "🏠" },
   { key: "Películas",    label: "Películas", icon: "🎬" },
-  { key: "Series",       label: "Series",    icon: "📺" },
+  { key: "series",       label: "Series",    icon: "📺" },
   { key: "Animación",    label: "Animación", icon: "🌀" },
   { key: "anime",        label: "Animes",    icon: "⚡" },
   { key: "documentales", label: "Docs",      icon: "🎥" },
@@ -383,11 +383,29 @@ function MovieCard({ post, onPress }) {
             ? <Image source={{ uri: post.image }} style={s.cardImg} />
             : <View style={[s.cardImg, s.noImg]}><Text style={{ fontSize: 24 }}>🎬</Text></View>
           }
-          {post.rating && (
-            <View style={s.ratingBadge}><Text style={s.ratingText}>★{post.rating}</Text></View>
+          {/* Certification top-left */}
+          {post.certification && (
+            <View style={s.certBadge}>
+              <Text style={s.certText}>{post.certification}</Text>
+            </View>
           )}
+          {/* Rating top-right */}
+          {post.rating && (
+            <View style={s.ratingBadge}>
+              <Text style={s.ratingText}>★{post.rating}</Text>
+            </View>
+          )}
+          {/* Year bottom-left */}
           {post.year && (
-            <View style={s.yearBadge}><Text style={s.yearText}>{post.year}</Text></View>
+            <View style={s.yearBadge}>
+              <Text style={s.yearText}>{post.year}</Text>
+            </View>
+          )}
+          {/* TMDB bottom-right */}
+          {post.rating && (
+            <View style={s.tmdbBadge}>
+              <Text style={s.tmdbText}>TMDB</Text>
+            </View>
           )}
         </View>
         <View style={s.cardBody}>
@@ -430,10 +448,14 @@ const s = StyleSheet.create({
   cardImgWrap:     { aspectRatio: 2/3, backgroundColor: colors.bgCard2, position: "relative" },
   cardImg:         { width: "100%", height: "100%", resizeMode: "cover" },
   noImg:           { alignItems: "center", justifyContent: "center" },
+  certBadge:       { position: "absolute", top: 4, left: 4, backgroundColor: "rgba(0,0,0,0.75)", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4, borderWidth: 0.5, borderColor: "#ffffff40" },
+  certText:        { color: "#fff", fontSize: 7, fontWeight: "800", letterSpacing: 0.3 },
   ratingBadge:     { position: "absolute", top: 4, right: 4, backgroundColor: "rgba(0,0,0,0.8)", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 5 },
   ratingText:      { color: colors.gold, fontSize: 8, fontWeight: "800" },
-  yearBadge:       { position: "absolute", top: 4, left: 4, backgroundColor: colors.primary, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 5 },
-  yearText:        { color: "#fff", fontSize: 8, fontWeight: "700" },
+  yearBadge:       { position: "absolute", bottom: 4, left: 4, backgroundColor: colors.primary, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+  yearText:        { color: "#fff", fontSize: 7, fontWeight: "700" },
+  tmdbBadge:       { position: "absolute", bottom: 4, right: 4, backgroundColor: "rgba(1,180,228,0.9)", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+  tmdbText:        { color: "#fff", fontSize: 7, fontWeight: "800", letterSpacing: 0.3 },
   cardBody:        { padding: 6 },
   cardTitle:       { color: colors.white, fontSize: 9, fontWeight: "600", lineHeight: 12 },
   bottomNav:       { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", backgroundColor: colors.bgCard3, borderTopWidth: 0.5, borderTopColor: colors.border, paddingTop: 10 },
