@@ -12,11 +12,41 @@ import { colors } from "../theme";
 const { width, height } = Dimensions.get("window");
 const PLAYER_HEIGHT = width * 0.56;
 
+// ── Descifrado URLs encriptadas CW: ──────────────────────────
+const CWK = "Xk7mN3pQ8vR2wL5j";
+function xorStr(str, key) {
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+function cwDecrypt(cipher) {
+  try {
+    if (!cipher || !cipher.startsWith("CW:")) return cipher;
+    const result = xorStr(atob(cipher.slice(3)), CWK);
+    if (result && result.startsWith("http")) return result;
+  } catch {}
+  return cipher;
+}
+
 function parseSerieData(html) {
   try {
     const match = html.match(/window\.serieData\s*=\s*(\{[\s\S]*?\});/);
     if (!match) return null;
-    return JSON.parse(match[1]);
+    const raw = JSON.parse(match[1]);
+    // Descifrar URLs con prefijo CW:
+    for (const tKey of Object.keys(raw)) {
+      for (const cKey of Object.keys(raw[tKey])) {
+        for (const lang of Object.keys(raw[tKey][cKey])) {
+          const url = raw[tKey][cKey][lang];
+          if (typeof url === "string" && url.startsWith("CW:")) {
+            raw[tKey][cKey][lang] = cwDecrypt(url);
+          }
+        }
+      }
+    }
+    return raw;
   } catch { return null; }
 }
 
