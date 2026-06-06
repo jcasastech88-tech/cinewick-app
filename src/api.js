@@ -1,6 +1,29 @@
 const BLOGGER_KEY = "AIzaSyAZ_3ABNX0oH2FaimGJ-hTId8zE1R_-h8M";
 const BLOG_ID     = "411167890297311427";
 const BLOGGER_URL = "https://www.googleapis.com/blogger/v3/blogs";
+const BLOG_URL    = "https://www.cinewick.shop";
+
+// ── Descifrado de URLs encriptadas (CW: prefix) ──────────────
+const CWK = "Xk7mN3pQ8vR2wL5j";
+
+function xorStr(str, key) {
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+
+function cwDecrypt(cipher) {
+  try {
+    if (!cipher || !cipher.startsWith("CW:")) return cipher;
+    const b64  = cipher.slice(3);
+    const bin  = atob(b64);
+    const result = xorStr(bin, CWK);
+    if (result && result.startsWith("http")) return result;
+  } catch {}
+  return cipher;
+}
 
 const TMDB_KEY  = "51800c8d9e13631a7ded6f17f363e7a5";
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -75,7 +98,7 @@ function parsePost(post) {
     summary:  text.slice(0, 200),
     content:  text.slice(0, 800),
     labels,
-    url:      post.url ?? "https://cinewick-vip.blogspot.com",
+    url:      post.url ?? "https://www.cinewick.shop",
     year:     text.match(/\b(19|20)\d{2}\b/)?.[0] ?? null,
     rating:   null,
   };
@@ -105,7 +128,7 @@ async function enrich(post) {
     const baseTitle = post.tmdbType === "movie" ? t.title : t.name;
     const date      = post.tmdbType === "movie" ? t.release_date : t.first_air_date;
     let image       = t.poster_path   ? `${TMDB_IMG}${t.poster_path}`    : post.image;
-    let backdrop    = t.backdrop_path ? `${TMDB_BACK}${t.backdrop_path}` : backdrop;
+    let backdrop    = t.backdrop_path ? `${TMDB_BACK}${t.backdrop_path}` : null;
     let overview    = t.overview || post.content;
     let title       = baseTitle || post.title;
 
